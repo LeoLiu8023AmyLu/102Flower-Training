@@ -3,7 +3,7 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为训练部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Files = dir(fullfile('D:\Flower\train\','*.jpg'));
+Files = dir(fullfile('E:\Flower\train\','*.jpg'));
 LengthFiles = length(Files);
 
 height=50;width=50;%特征向量大小，可以调整
@@ -13,7 +13,7 @@ w3 =  zeros(height*width,LengthFiles/3);%第三类训练矩阵
 
 %第一类图像
 for i = 1:LengthFiles/3
-    img = imread(strcat('D:\Flower\train\',Files(i).name));%读取图像
+    img = imread(strcat('E:\Flower\train\',Files(i).name));%读取图像
     img1 = rgb2gray(img);%转换成灰度图
     if i>=1 && i<=5
     figure;imshow(img1)
@@ -27,7 +27,7 @@ for i = 1:LengthFiles/3
 end
 %第二类图像
 for i = LengthFiles/3+1:2*LengthFiles/3
-    img =imread(strcat('D:\Flower\train\',Files(i).name));
+    img =imread(strcat('E:\Flower\train\',Files(i).name));
     img1 = rgb2gray(img);
     if i>=1 && i<=5
     figure;imshow(img1)
@@ -40,7 +40,7 @@ for i = LengthFiles/3+1:2*LengthFiles/3
 end
 %第三类图像
 for i =2*LengthFiles/3+1:LengthFiles
-    img = imread(strcat('D:\Flower\train\',Files(i).name));
+    img = imread(strcat('E:\Flower\train\',Files(i).name));
     img1 = rgb2gray(img);
     if i>=1 && i<=5
     figure;imshow(img1)
@@ -64,11 +64,11 @@ svmStruct23 = svmtrain(w23',Y,'Kernel_Function','quadratic');%区分第二类和第二类
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为测试部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Files = dir(fullfile('D:\Flower\test\','*.jpg'));
+Files = dir(fullfile('E:\Flower\test\','*.jpg'));
 LengthFiles = length(Files);
 correct=0;
 for i=1:30
-    img = imread(strcat('D:\Flower\test\',Files(i).name));
+    img = imread(strcat('E:\Flower\test\',Files(i).name));
     img1 = rgb2gray(img);
     [m,n] = size(img1);
     m1 = round(m/2);n1=round(n/2);
@@ -86,7 +86,7 @@ for i=1:30
    end
 end
 for i=31:60
-    img = imread(strcat('D:\Flower\test\',Files(i).name));
+    img = imread(strcat('E:\Flower\test\',Files(i).name));
     img1 = rgb2gray(img);
     img2 = imresize(img1,[height,width]);
     testy = double(img2(:)); 
@@ -102,7 +102,7 @@ for i=31:60
     end
 end
 for i=61:LengthFiles
-    img = imread(strcat('D:\Flower\test\',Files(i).name));
+    img = imread(strcat('E:\Flower\test\',Files(i).name));
     img1 = rgb2gray(img);
     img2 = imresize(img1,[height,width]);
     testy = double(img2(:)); 
