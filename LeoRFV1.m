@@ -2,6 +2,7 @@ clc;clear;
 clear all
 close all
 addpath('./RF_Class_C/'); % 添加路径
+%addpath('../'); % 添加路径
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为随机森林算法预处理部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,17 +23,17 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Flag_Show_Picture=0;    % 控制是否显示图片                1 显示 0 不显示
 Flag_Use_Random_Index=1;% 控制是否使用随机引索            1 使用 0 不使用
-Flag_Test_Detail=1;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
+Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化设置部分   你要设置的 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 File_Fofer_Path='E:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
 Original_Set='flower102\';% 所有Flower图片 目录 
-Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
-Test_Set_Num=20;    % 选择作为检测的图片数量  ***重点设置项目
-Flower_Num=10;     % 选择读取花图片的种类数量 ***重点设置项目
+Train_Set_Num=10;   % 选择作为训练的图片数量  ***重点设置项目
+Test_Set_Num=10;    % 选择作为检测的图片数量  ***重点设置项目
+Flower_Num=20;     % 选择读取花图片的种类数量 ***重点设置项目
 RF_Tree=400;       % 设置 随机森林算法中 树的数量   ***重点设置项目
-height=128;width=128;% 特征向量大小，可以调整
+height=50;width=50;% 特征向量大小，可以调整
 Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
@@ -75,10 +76,9 @@ for flower_index=1:Flower_Num
         if(i==1 && Flag_Show_Picture==1) % 判断是否显示图片
             figure;imshow(img_gray) %显示每种花的样子
         end
-        % 这里增加特征提取 会有更好的效果
         [m,n] = size(img_gray); % 得到图片大小
         m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        img_midle = img_gray(m1-199:m1+200,n1-199:n1+200);%截取中间图像
+        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
         img_resize = imresize(img_midle,[height,width]);%调整大小
         W(:,i,flower_index) = double(img_resize(:)); %得到训练向量     
     end
@@ -96,7 +96,7 @@ for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
             W_Train=[W_Train W(:,:,B)];   % 添加 负面 训练矩阵 PS:矩阵的列为每个图像的向量，不同列不同的图像向量
         end
     end
-    RF_Struct(A) = classRF_train(W_Train' ,Y_Train',RF_Tree);%区分第A类和第B类 
+    RF_Struct(A) = classRF_train(W_Train' ,Y_Train,RF_Tree);%区分第A类和第B类 
     printIteration(A);
 end
 W=0;    % 清空内存
@@ -132,13 +132,7 @@ for flower_index=1:Flower_Num
         % 添加 特征提取的部分
         [m,n] = size(img_gray); % 得到图片大小
         m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        if(m1/n1>1)
-            temp_size=floor((n1-2)/2);
-        else
-            temp_size=floor((m1-2)/2);
-        end
-        %img_midle = img(m1-(temp_size-1):m1+temp_size,n1-(temp_size-1):n1+temp_size);%截取中间图像
-        img_midle = img(m1-199:m1+200,n1-199:n1+200);%截取中间图像
+        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
         img_resize = imresize(img_midle,[height,width]);%调整大小
         W_Test =[W_Test double(img_resize(:))]; %训练向量
     end
