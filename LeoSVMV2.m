@@ -1,6 +1,10 @@
 clc;clear;
 clear all
 close all
+addpath('./hog_matlab/'); % 添加路径
+addpath('./hog_matlab/common/');
+addpath('./hog_matlab/svm/');
+addpath('./hog_matlab/svm/minFunc/');
 tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 本程序方法为：
@@ -13,21 +17,24 @@ tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Flag_Show_Picture=0;    % 控制是否显示图片                1 显示 0 不显示
 Flag_Use_Random_Index=1;% 控制是否使用随机引索            1 使用 0 不使用
-Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
+Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节   1 显示 0 不显示
+Flag_Use_Hog=0;         % 是否使用Hog提取特征向量         1 使用 0 不使用
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化设置部分   你要设置的 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-File_Fofer_Path='D:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
+File_Fofer_Path='E:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
 Original_Set='flower102\';% 所有Flower图片 目录 
 Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
 Test_Set_Num=20;    % 选择作为检测的图片数量  ***重点设置项目
 Flower_Num=10;     % 选择读取花图片的种类数量 ***重点设置项目
-height=128;width=128;% 特征向量大小，可以调整
+height=128;width=128;% 特征向量大小，可以调整 越大识别率越高
 Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
+step=16;    % Hog 算法 Cell 分割大小
+orient=9;   % 方向直方图的方向个数
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 显示参数
+%% 显示参数
 disp('本次 S V M 算法 参数:')
 disp(['-->训练对象为 ',num2str(Flower_Num),' 种不同种类的花朵图片'])
 disp(['-->每种花中选取 ',num2str(Train_Set_Num),' 张图片作为训练集'])
@@ -35,6 +42,11 @@ disp(['-->每种花中选取 ',num2str(Test_Set_Num),' 张图片作为测试集'])
 disp(['-->特征向量高度: ',num2str(height)])
 disp(['-->特征向量宽度: ',num2str(width)])
 disp(['-->图像截取宽度(正方形): ',num2str(Picture_Cut_Size)])
+if(Flag_Use_Hog==1)
+    disp('***本次使用Hog特征提取算法:')
+    disp(['-->Hog 步长: ',num2str(step)])
+    disp(['-->Hog 直方图个数: ',num2str(orient)])
+end
 load([File_Fofer_Path,'imagelabels.mat']);% 读取图片标签(对应每张图片的分类) 文件名为labels PS：理解为文件夹里的每个图片有一个序号，还有一个类别号
 %生成随机数列
 if (Flag_Use_Random_Index==1)
@@ -42,13 +54,15 @@ if (Flag_Use_Random_Index==1)
     Random_Q=randperm(max(labels)); % 生成102个随机排列的数组
     Random_Index=Random_Q(1:Flower_Num); % 从之中 截取 前 Flower_Num 个数字 组成新的数组，用于随机抽取 
 end
+
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为训练部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Original_Files = dir(fullfile([File_Fofer_Path,Original_Set],'*.jpg')); %读取Flower_Numflower目录地址
-W=[];   % 正面训练图片向量数组 初始化
+W=[];           % 初始化 图片 正面训练集
 disp('训练矩阵初始化完成 ')
-% 循环得到图像的训练集
+%% 循环得到图像的训练集
 fprintf('处理训练集图片种类数:');
 for flower_index=1:Flower_Num
     if (Flag_Use_Random_Index==1) % 判断是否使用随机抽取
@@ -60,25 +74,32 @@ for flower_index=1:Flower_Num
     for i = 1:Train_Set_Num
         flower_img_index=File_Index(i); % 读取图片的引索值
         img = imread(strcat([File_Fofer_Path,Original_Set],Original_Files(flower_img_index).name));%读取图像
-        img_gray = rgb2gray(img);%转换成灰度图
-        if(i==1 && Flag_Show_Picture==1) % 判断是否显示图片
-            figure;imshow(img_gray) %显示每种花的样子
+        if(Flag_Use_Hog==0)
+            img_gray = rgb2gray(img);%转换成灰度图
+            if(i==1 && Flag_Show_Picture==1) % 判断是否显示图片
+                figure;imshow(img_gray) %显示每种花的样子
+            end
+            [m,n] = size(img_gray); % 得到图片大小
+            m1 = round(m/2);n1=round(n/2);  % 找图像中心点
+            img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
+            img_resize = imresize(img_midle,[height,width]);%调整大小
+            W(:,i,flower_index) = double(img_resize(:)); %得到训练向量
+        else
+            % HOG 特征提取方式
+            imh_hog_featureVec=HOG(img,height,width,Picture_Cut_Size,step,orient);
+            W(:,i,flower_index)=imh_hog_featureVec';
         end
-        [m,n] = size(img_gray); % 得到图片大小
-        m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
-        img_resize = imresize(img_midle,[height,width]);%调整大小
-        W(:,i,flower_index) = double(img_resize(:)); %得到训练向量     
     end
     printIteration(flower_index);
 end
 fprintf('\n');
 disp('图像训练集矩阵计算完成 ')
-% S V M 训练  核心部分
+
+%% S V M 训练  核心部分
 fprintf('S V M 训练 种类数:');
 Y_Train =[ones(1,Train_Set_Num) -1*ones(1,Train_Set_Num*(Flower_Num-1))];    % 生成训练分类标签 (1 表示正确  -1 表示错误)
 for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
-    W_Train=W(:,:,A); %生成 正面 训练项 
+    W_Train=W(:,:,A); %生成 正面 训练项
     for B=1:Flower_Num
         if(A~=B)    % 不能自己跟自己对比，因此除自己与自己之外的其他情况，进行SVM训练
             W_Train=[W_Train W(:,:,B)];   % 添加 负面 训练矩阵 PS:矩阵的列为每个图像的向量，不同列不同的图像向量
@@ -87,10 +108,12 @@ for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
     SVM_Struct(A) = svmtrain(W_Train' ,Y_Train','Kernel_Function','quadratic');%区分第A类和第B类 quadratic这个参数是关键
     printIteration(A);
 end
-W=0;    % 清空内存
-W_T=0;  % 清空内存
+%W=0;    % 清空内存
+%W_T=0;  % 清空内存
 fprintf('\n');
 disp('S V M 训练完成 ')
+
+%% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为测试部分
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,12 +139,18 @@ for flower_index=1:Flower_Num
     for i = (Train_Set_Num+1):Test_Set_End
         flower_img_index=File_Index(i);
         img = imread(strcat([File_Fofer_Path,Original_Set],Original_Files(flower_img_index).name));%读取图像
-        img_gray = rgb2gray(img);
-        [m,n] = size(img_gray); % 得到图片大小
-        m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
-        img_resize = imresize(img_midle,[height,width]);%调整大小
-        W_Test =[W_Test double(img_resize(:))]; %训练向量
+        if(Flag_Use_Hog==0)
+            img_gray = rgb2gray(img);
+            [m,n] = size(img_gray); % 得到图片大小
+            m1 = round(m/2);n1=round(n/2);  % 找图像中心点
+            img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
+            img_resize = imresize(img_midle,[height,width]);%调整大小
+            W_Test =[W_Test double(img_resize(:))]; %训练向量
+        else
+            % HOG 特征提取方式
+            imh_hog_featureVec=HOG(img,height,width,Picture_Cut_Size,step,orient);
+            W_Test=[W_Test imh_hog_featureVec'];
+        end
     end
     SVM_Result = svmclassify(SVM_Struct(flower_index),W_Test');%大于零为第A类，小于零为第B类
     SVM_Result=SVM_Result';
