@@ -32,6 +32,7 @@
 
 * K近邻分类器 （KNN） </br>
 	
+	
 	mdl = ClassificationKNN.fit(train_data,train_label,'NumNeighbors',1);
 	predict_label = predict(mdl, test_data);
 	accuracy = length(find(predict_label == test_label))/length(test_label)*100
@@ -39,17 +40,20 @@
  
 * 随机森林分类器（Random Forest）</br>
 	
+	
 	B = TreeBagger(nTree,train_data,train_label);
 	predict_label = predict(B,test_data);
  
  
 * 朴素贝叶斯 （Na?ve Bayes） </br>
 
+
 	nb = NaiveBayes.fit(train_data, train_label);
 	predict_label = predict(nb, test_data);
 	accuracy = length(find(predict_label == test_label))/length(test_label)*100;
  
 * 集成学习方法（Ensembles for Boosting, Bagging, or Random Subspace） <br>
+
 	
 	ens = fitensemble(train_data,train_label,'AdaBoostM1' ,100,'tree','type','classification');
 	predict_label   =       predict(ens, test_data);
@@ -57,11 +61,13 @@
  
 * 鉴别分析分类器（discriminant analysis classifier）</br>
 
+
 	obj = ClassificationDiscriminant.fit(train_data, train_label);
 	predict_label   =       predict(obj, test_data);
  
  
 * 支持向量机（Support Vector Machine, SVM） </br>
+
 
 	SVMStruct = svmtrain(train_data, train_label);
 	predict_label  = svmclassify(SVMStruct, test_data)
