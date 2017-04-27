@@ -27,13 +27,14 @@ Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化设置部分   你要设置的 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-File_Fofer_Path='E:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
+File_Fofer_Path='D:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
 Original_Set='flower102\';% 所有Flower图片 目录 
-Train_Set_Num=10;   % 选择作为训练的图片数量  ***重点设置项目
+Flower_Num=102;     % 选择读取花图片的种类数量 ***重点设置项目
+Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
 Test_Set_Num=10;    % 选择作为检测的图片数量  ***重点设置项目
-Flower_Num=20;     % 选择读取花图片的种类数量 ***重点设置项目
-RF_Tree=400;       % 设置 随机森林算法中 树的数量   ***重点设置项目
-height=50;width=50;% 特征向量大小，可以调整
+RF_Tree=0;       % 设置 随机森林算法中 树的数量   ***重点设置项目
+mtry = 0;
+height=80;width=80;% 特征向量大小，可以调整
 Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
@@ -96,7 +97,7 @@ for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
             W_Train=[W_Train W(:,:,B)];   % 添加 负面 训练矩阵 PS:矩阵的列为每个图像的向量，不同列不同的图像向量
         end
     end
-    RF_Struct(A) = classRF_train(W_Train' ,Y_Train,RF_Tree);%区分第A类和第B类 
+    RF_Struct(A) = classRF_train(W_Train' ,Y_Train',RF_Tree,mtry);%区分第A类和第B类 
     printIteration(A);
 end
 W=0;    % 清空内存
