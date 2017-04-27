@@ -9,11 +9,13 @@
 * [Matlab使用技巧  http://blog.csdn.net/lqhbupt/article/details/20292113](http://blog.csdn.net/lqhbupt/article/details/20292113)</br>
 * [随机森林 介绍  http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#intro](http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#intro)</br>
 * [随机森林 原理 http://www.cnblogs.com/maybe2030/p/4585705.html](http://www.cnblogs.com/maybe2030/p/4585705.html)</br>
+* [随机森林（原理/样例实现/参数调优） http://blog.csdn.net/y0367/article/details/51501780](http://blog.csdn.net/y0367/article/details/51501780)</br>
 
 ## 工作记录 </br>
 * 2017.04.24 谈合作细节，了解项目相关领域知识(SVM CNN RF Adaboost等) 商讨价格，第一次优化 SVM 程序 </br>
 * 2017.04.25 尝试完成 RF 第一版本程序</br>
 * 2017.04.26 第二次优化 SVM 程序</br>
+* 2017.04.27 完善 RF 程序</br>
 
 ## Matlab 分类器</br>
 

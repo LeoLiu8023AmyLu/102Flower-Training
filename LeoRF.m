@@ -16,20 +16,22 @@ tic
 %以下为程序控制部分     你要设置的
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Flag_Show_Picture=0;    % 控制是否显示图片                1 显示 0 不显示
-Flag_Use_Random_Index=1;% 控制是否使用随机引索            1 使用 0 不使用
+Flag_Use_Random_Index=0;% 控制是否使用随机引索            1 使用 0 不使用
 Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化设置部分   你要设置的 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 File_Fofer_Path='D:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用改，自动的
 Original_Set='flower102\';% 所有Flower图片 目录 
-Flower_Num=10;     % 选择读取花图片的种类数量 ***重点设置项目
+Flower_Num=3;     % 选择读取花图片的种类数量 ***重点设置项目
 Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
 Test_Set_Num=20;    % 选择作为检测的图片数量  ***重点设置项目
-RF_Tree= 0*Flower_Num*Train_Set_Num;       % 设置 随机森林算法中 树的数量   ***重点设置项目
-mtry = 0*Flower_Num*Train_Set_Num/2;          % 设置 随机森林算法中 分裂的数量   ***重点设置项目
-height=100;width=100;% 特征向量大小，可以调整
-J_Rate=0.7;     % 判断是否为视为可识别的比率 这个设置越低 正确率越高 ***重点设置项目
+height=128;width=128;% 特征向量大小，可以调整
+Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
+J_Rate=0.9;     % 判断是否为视为可识别的比率 这个设置越低 正确率越高 ***重点设置项目
+%% RF 参数
+RF_Tree= 0*2*Flower_Num*Train_Set_Num;       % 设置 随机森林算法中 树的数量   ***重点设置项目
+mtry = 0*max(floor(height*width/3),1);          % 设置 随机森林算法中 分裂的数量   ***重点设置项目
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
@@ -43,6 +45,7 @@ disp(['-->随机森林树的数量: ',num2str(RF_Tree)])
 disp(['-->随机森林分裂的数量: ',num2str(mtry)])
 disp(['-->特征向量高度: ',num2str(height)])
 disp(['-->特征向量宽度: ',num2str(width)])
+disp(['-->图像截取宽度(正方形): ',num2str(Picture_Cut_Size)])
 disp(['-->判断阈值: ',num2str(J_Rate),' (判断是否视为识别正确的比率)'])
 load([File_Fofer_Path,'imagelabels.mat']);% 读取图片标签(对应每张图片的分类) 文件名为labels PS：理解为文件夹里的每个图片有一个序号，还有一个类别号
 %生成随机数列
@@ -59,6 +62,7 @@ Original_Files = dir(fullfile([File_Fofer_Path,Original_Set],'*.jpg')); %读取Flo
 W=[];
 disp('训练矩阵初始化完成 ')
 % 循环得到图像的训练集
+fprintf('处理训练集图片种类数:');
 for flower_index=1:Flower_Num
     if (Flag_Use_Random_Index==1) % 判断是否使用随机抽取
         File_Index=find(labels==Random_Index(flower_index));    % 使用随机抽取得到的类别，然后得到相应的引索值
@@ -73,25 +77,28 @@ for flower_index=1:Flower_Num
         if(i==1 && Flag_Show_Picture==1) % 判断是否显示图片
             figure;imshow(img_gray) %显示每种花的样子
         end
-        % 这里增加特征提取 会有更好的效果
         [m,n] = size(img_gray); % 得到图片大小
         m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        img_midle = img_gray(m1-199:m1+200,n1-199:n1+200);%截取中间图像
+        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
         img_resize = imresize(img_midle,[height,width]);%调整大小
         W(:,i,flower_index) = double(img_resize(:)); %得到训练向量
     end
+    printIteration(flower_index);
 end
+fprintf('\n');
 disp('图像训练集矩阵计算完成 ')
 %% 随机森林算法 训练
+fprintf('RF 训练 种类数:');
 Y =[ones(1,Train_Set_Num) -1*ones(1,Train_Set_Num)];    % 训练使用的数组
 for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
     for B=1:Flower_Num
         W_T(:,:,A,B)=[W(:,:,A) W(:,:,B)];   % 生成对比矩阵: W_T(:,:,A,B) ，此矩阵是4维数组，PS:可以想象成一个矩阵X(A,B),A,B 是引索，得到的是一个小的2维矩阵
-        if(A~=B)    % 不能自己跟自己对比，因此除自己与自己之外的其他情况，进行SVM训练
-            %svmStruct(:,:,A,B) = svmtrain(W_T(:,:,A,B)',Y,'Kernel_Function','quadratic');%区分第A类和第B类 quadratic这个参数是关键
-            RF_model(:,:,A,B) = classRF_train(W_T(:,:,A,B)',Y, RF_Tree);
+        if(A~=B)    % 不能自己跟自己对比，因此除自己与自己之外的其他情况，进行RF训练
+            %区分第A类和第B类 
+            RF_model(A,B) = classRF_train(W_T(:,:,A,B)',Y, RF_Tree);
         end
     end
+    printIteration(A);
 end
 W=0;    % 清空内存
 W_T=0;  % 清空内存
@@ -128,13 +135,12 @@ for flower_index=1:Flower_Num
         % 添加 特征提取的部分
         [m,n] = size(img_gray); % 得到图片大小
         m1 = round(m/2);n1=round(n/2);  % 找图像中心点
-        img_midle = img_gray(m1-199:m1+200,n1-199:n1+200);%截取中间图像
+        img_midle = img_gray(m1-(Picture_Cut_Size/2-1):m1+(Picture_Cut_Size/2),n1-(Picture_Cut_Size/2-1):n1+(Picture_Cut_Size/2));%截取中间图像
         img_resize = imresize(img_midle,[height,width]);%调整大小
-        %img_resize = imresize(img_gray,[height,width]);
         testy = double(img_resize(:)); %训练向量
         for B=1:Flower_Num
             if(flower_index~=B)
-                result(flower_index,B)  = classRF_predict(testy',RF_model(:,:,flower_index,B));%大于零为第A类，小于零为第B类
+                result(flower_index,B)  = classRF_predict(testy',RF_model(flower_index,B));%大于零为第A类，小于零为第B类
             else
                 result(flower_index,B) =0;
             end

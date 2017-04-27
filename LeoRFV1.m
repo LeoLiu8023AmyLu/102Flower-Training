@@ -23,7 +23,7 @@ tic
 %以下为程序控制部分     你要设置的
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Flag_Show_Picture=0;    % 控制是否显示图片                1 显示 0 不显示
-Flag_Use_Random_Index=1;% 控制是否使用随机引索            1 使用 0 不使用
+Flag_Use_Random_Index=0;% 控制是否使用随机引索            1 使用 0 不使用
 Flag_Test_Detail=0;     % 是否计算每个测试图片的识别细节  1 显示 0 不显示
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化设置部分   你要设置的 
@@ -32,11 +32,11 @@ File_Fofer_Path='D:\Flower\';   % 文件夹目录 直接改这里就可以了 其他地方完全不用
 Original_Set='flower102\';% 所有Flower图片 目录 
 Flower_Num=10;     % 选择读取花图片的种类数量 ***重点设置项目
 Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
-Test_Set_Num=10;    % 选择作为检测的图片数量  ***重点设置项目
-height=100;width=100;% 特征向量大小，可以调整
+Test_Set_Num=20;    % 选择作为检测的图片数量  ***重点设置项目
+height=128;width=128;% 特征向量大小，可以调整
 Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
-RF_Tree = 500 ;       % 设置 随机森林算法中 树的数量   ***重点设置项目 默认500
-mtry = max(floor(height*width/3),1);   % 设置 随机森林算法中 分裂的数量   ***重点设置项目
+RF_Tree = 100 ;       % 设置 随机森林算法中 树的数量   ***重点设置项目 默认500
+mtry = 128; % 0*max(floor(height*width/3),1);   % 设置 随机森林算法中 分裂的数量   ***重点设置项目
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
@@ -93,17 +93,17 @@ fprintf('\n');
 disp('图像训练集矩阵计算完成 ')
 %% RF 训练  核心部分
 fprintf('RF 训练 种类数:');
-Y_Train =[ones(1,Train_Set_Num) -1*ones(1,Train_Set_Num)];    % 生成训练分类标签 (1 表示正确  -1 表示错误)
-Y_Train=repmat(Y_Train,1,(Flower_Num-1));
+Y_Train =[ones(1,Train_Set_Num) -1*ones(1,Train_Set_Num*(Flower_Num-1))];    % 生成训练分类标签 (1 表示正确  -1 表示错误)
 for A=1:Flower_Num % 循环生成 训练集 
-    W_Train=[];
+    W_Train=W(:,:,A);   % 添加 正面 训练项
     for B=1:Flower_Num
         if(A~=B)    % 不能自己跟自己对比，因此除自己与自己之外的其他情况，进行SVM训练
-            W_Train=[W_Train W(:,:,A)];   % 添加 正面 训练项
             W_Train=[W_Train W(:,:,B)];   % 添加 负面 训练矩阵 PS:矩阵的列为每个图像的向量，不同列不同的图像向量
         end
     end
     RF_Struct(A) = classRF_train(W_Train' ,Y_Train',RF_Tree,mtry);%区分第A类和第B类 
+    figure('Name','OOB error rate');
+    plot(RF_Struct(A).errtr(:,1)); title('OOB error rate');  xlabel('iteration (# trees)'); ylabel('OOB error rate');
     printIteration(A);
 end
 W=0;    % 清空内存
