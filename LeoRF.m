@@ -28,10 +28,10 @@ Train_Set_Num=30;   % 选择作为训练的图片数量  ***重点设置项目
 Test_Set_Num=20;    % 选择作为检测的图片数量  ***重点设置项目
 height=128;width=128;% 特征向量大小，可以调整
 Picture_Cut_Size=400;% 图片截取大小，可以调整 默认:400 
-J_Rate=0.9;     % 判断是否为视为可识别的比率 这个设置越低 正确率越高 ***重点设置项目
+J_Rate=0.95;     % 判断是否为视为可识别的比率 这个设置越低 正确率越高 ***重点设置项目
 %% RF 参数
-RF_Tree= 0*2*Flower_Num*Train_Set_Num;       % 设置 随机森林算法中 树的数量   ***重点设置项目
-mtry = 0*max(floor(height*width/3),1);          % 设置 随机森林算法中 分裂的数量   ***重点设置项目
+RF_Tree= 100;       % 设置 随机森林算法中 树的数量   ***重点设置项目
+mtry = 128;          % 设置 随机森林算法中 分裂的数量   ***重点设置项目
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %以下为初始化计算部分
@@ -102,6 +102,7 @@ for A=1:Flower_Num % 循环生成 两两对比的SVM训练结果
 end
 W=0;    % 清空内存
 W_T=0;  % 清空内存
+fprintf('\n');
 disp('随机森林 训练完成 ')
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,7 +148,7 @@ for flower_index=1:Flower_Num
         end
         % 判断方法就是：计算 (识别的/总数) > 我们设定的阈值比率 就认为是识别的 
         % 100准确识别的话 比率 J_Rate 应设置为 0.9 或者 0.8
-        if(length(find(result(flower_index,:)==1))/(length(result(flower_index,:))-1)>J_Rate)   % 判断是否为正确识别
+        if(length(find(result(flower_index,:)==1))/(length(result(flower_index,:))-1)>=J_Rate)   % 判断是否为正确识别
             correct=correct+1;  %总统计
             correct_Temp=correct_Temp+1;%每个类别统计
         end
